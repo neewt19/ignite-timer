@@ -10,7 +10,7 @@ const newCycleFormValidationSchema = zod.object({
   task: zod.string().min(1, 'Informe a tarefa'),
   minutesAmount: zod
     .number()
-    .min(5, 'tem que ser no minimo 5 min man')
+    .min(1, 'tem que ser no minimo 5 min man')
     .max(60, 'tem que ter no maximo 60 min man'),
 })
 
@@ -26,6 +26,8 @@ interface Cycle {
   task: string
   minutesAmount: number
   startDate: Date
+  interruptedDate?:Date
+  finishedDate?:Date
 }
 
 export function Home() {
@@ -49,11 +51,33 @@ export function Home() {
     let interval: number
     if (activeCycle) {
       interval = setInterval(() => {
-        setAmountSecondsPassed(
-          differenceInSeconds(new Date(), activeCycle.startDate),
+        const secondsDiference = differenceInSeconds(
+          new Date(),
+          activeCycle.startDate
         )
+        
+        if (secondsDiference >= totalSeconds){
+          setCycles(state => state.map(cycle => {
+              if (cycle.id === activeCycleId){
+                return {...cycle, finishedDate: new Date( )}
+              }else{
+                return cycle
+              }
+            })
+          )
+
+          setAmountSecondsPassed(totalSeconds)
+          clearInterval(interval)
+        }
+
+        else{
+          setAmountSecondsPassed(secondsDiference)
+        }
+
       }, 100)
     }
+
+
     return ()=>{
       clearInterval(interval)
     }
@@ -73,6 +97,18 @@ export function Home() {
     reset()
   }
 
+  function handleInterruptCycle(){
+    setCycles(state => state.map(cycle =>{
+      if (cycle.id === activeCycleId){
+        return {...cycle, interruptedDate: new Date( )}
+      }else{
+        return cycle
+      }
+    }))
+    setActiveCycleId(null)
+  }
+
+  console.log(cycles)
   const totalSeconds = activeCycle ? activeCycle.minutesAmount * 60 : 0
   const currentSeconds = activeCycle ? totalSeconds - amountSecondsPassed : 0
 
@@ -85,8 +121,13 @@ export function Home() {
   const task = watch('task')
 
   const isSubmitDesabled = !task
-
-  activeCycle?document.title = `${minutes}:${seconds}`:null
+  useEffect(()=>{
+    if(activeCycle){
+      document.title = `${minutes}:${seconds}`
+    }else{
+      document.title = document.title
+    }
+  },[minutes,seconds])
 
   return (
     <S.HomeContainer>
@@ -114,7 +155,7 @@ export function Home() {
             id="minutesAmount"
             placeholder="00"
             step={5}
-            min={5}
+            min={1}
             max={60}
             disabled={!!activeCycle}
             {...register('minutesAmount', { valueAsNumber: true })}
@@ -131,7 +172,7 @@ export function Home() {
           <span>{seconds[1]}</span>
         </S.CountdownContainer>
         {activeCycle?(
-          <S.StopCountDownButton type="button">
+          <S.StopCountDownButton type="button" onClick={handleInterruptCycle}>
             <HandPalm/>
             Interromper
           </S.StopCountDownButton>
