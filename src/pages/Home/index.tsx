@@ -12,7 +12,7 @@ const newCycleFormValidationSchema = zod.object({
   task: zod.string().min(1, 'Informe a tarefa'),
   minutesAmount: zod
     .number()
-    .min(1, 'tem que ser no minimo 5 min man')
+    .min(5, 'tem que ser no minimo 5 min man')
     .max(60, 'tem que ter no maximo 60 min man'),
 })
 
